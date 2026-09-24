@@ -16,6 +16,16 @@ The Python bindings (`keystone.py`, `*_const.py`) come from the same release. On
 
 `keystone.py` tries each platform's library name in turn from this directory, so all three libraries can live side by side.
 
+## Source
+
+GPLv2 requires the corresponding source for these libraries to be available. It is pinned as a git submodule at [`third_party/keystone`](../../../third_party/keystone), pointing to [mahmoudimus/keystone](https://github.com/mahmoudimus/keystone), a fork of gaasedelen/keystone. The pinned commit is [`9ddb5e8`](https://github.com/mahmoudimus/keystone/commit/9ddb5e85b9507a98de3919ae24c18b02f8541442), also tagged `patching-v0.2.0`.
+
+That commit is the head of gaasedelen/keystone's `master` (2024-11-23), the day before the v0.2.0 release that the libraries came from. It is inferred from those dates: the build is not bit-for-bit reproducible, and the CI records that produced it have expired.
+
+As of 2026-09, upstream keystone-engine has not picked up gaasedelen's fixes. gaasedelen never opened a pull request, and upstream has not changed the affected files (`llvm/lib/MC/MCParser/AsmParser.cpp` and the X86 asm parser and code emitter) since the fork diverged. Upstream's last release is still 0.9.2 (2020).
+
+The plugin never needs the submodule: `git clone` without `--recursive` is fine. Fetch the source with `git submodule update --init`.
+
 ## License
 
 The Keystone engine libraries are licensed under GPLv2 (`COPYING`). The Python bindings are licensed under a BSD 3-clause license (`LICENSE.TXT`). Both files are redistributed unchanged. The rest of the plugin is MIT licensed, and upstream's release zips already shipped these same files alongside it.
