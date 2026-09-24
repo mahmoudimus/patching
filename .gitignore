@@ -139,4 +139,6 @@ dmypy.json
 
 # ida test suite
 samples/*
-plugins/patching/keystone/*
+
+# vendored keystone engine (see plugins/patching/keystone/README.md)
+!plugins/patching/keystone/libkeystone.so
