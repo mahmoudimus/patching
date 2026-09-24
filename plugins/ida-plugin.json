@@ -1,0 +1,49 @@
+{
+    "$schema": "https://hcli.docs.hex-rays.com/schemas/ida-plugin.json",
+    "IDAMetadataDescriptorVersion": 1,
+    "plugin": {
+        "name": "patching",
+        "entryPoint": "patching.py",
+        "version": "0.3.0",
+        "idaVersions": [
+            "9.0",
+            "9.0sp1",
+            "9.1",
+            "9.2",
+            "9.3",
+            "9.4",
+            "10.0"
+        ],
+        "description": "Patch some shit",
+        "categories": [
+            "collaboration-and-productivity",
+            "decompilation",
+            "debugging-and-tracing"
+        ],
+        "keywords": [
+            "binary-patterns",
+            "function-identification",
+            "x86",
+            "x64",
+            "arm",
+            "armv7",
+            "aarch64",
+            "thumb",
+            "mips",
+            "mipsel",
+            "signature-generation",
+            "signature-search"
+        ],
+        "license": "MIT",
+        "urls": {
+            "repository": "https://github.com/gaasedelen/patching",
+            "homepage": "https://github.com/gaasedelen"
+        },
+        "authors": [
+            {
+                "name": "gaasedelen",
+                "email": "contact@ret2.io"
+            }
+        ]
+    }
+}
