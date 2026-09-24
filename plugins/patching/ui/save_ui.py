@@ -124,9 +124,14 @@ class SaveDialog(QtWidgets.QDialog):
         """
         starting_directory = os.path.dirname(self.controller.target_filepath)
 
+        #
         # prompt the user to select a patch target / output file
-        dialog = QtWidgets.QFileDialog()
-        filepath, _ = dialog.getSaveFileName(caption="Select patch target...", directory=starting_directory)
+        #
+        # NOTE: args are positional because the directory keyword differs
+        # between PyQt5 ('directory') and PySide6 ('dir')
+        #
+
+        filepath, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Select patch target...", starting_directory)
 
         # user did not select a file or closed the file dialog
         if not filepath:
