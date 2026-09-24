@@ -23,10 +23,10 @@ class PatchingDockable(ida_kernwin.PluginForm):
 
     def Show(self):
 
-        # TODO/Hex-Rays/XXX: can't make window Floating? using plgform_show(...) instead
+        # use the public PluginForm API rather than the private __clink__ handle
         flags = ida_kernwin.PluginForm.WOPN_DP_FLOATING | ida_kernwin.PluginForm.WOPN_CENTERED
-        #super(PatchingDockable, self).Show(self.controller.WINDOW_TITLE, flags)
-        ida_kernwin.plgform_show(self.__clink__, self, self.controller.WINDOW_TITLE, flags)
+        if not super(PatchingDockable, self).Show(self.controller.WINDOW_TITLE, flags):
+            return False
         self._center_dialog()
 
         #
@@ -40,17 +40,22 @@ class PatchingDockable(ida_kernwin.PluginForm):
 
         # set the initial keyboard focus the editable assembly line
         self._line_assembly.setFocus(QtCore.Qt.FocusReason.ActiveWindowFocusReason)
+        return True
 
     def OnCreate(self, form):
-        self._twidget = form
-        self.widget = ida_kernwin.PluginForm.TWidgetToPyQtWidget(self._twidget)
+        # IDA can hand OnCreate() a PyCapsule, so prefer the SWIG TWidget*
+        self._twidget = self.GetWidget() or form
+        self.widget = twidget_to_qwidget(self._twidget)
         self._ui_init()
 
     def OnClose(self, form):
-        self._edit_timer.stop()
-        self._edit_timer = None
-        self._code_view = None
-        self.controller.view = None
+        if getattr(self, '_edit_timer', None):
+            self._edit_timer.stop()
+            self._edit_timer = None
+        if getattr(self, '_code_view', None):
+            self._code_view._ui_hooks.unhook()
+            self._code_view = None
+        self.controller.close()
         return super().OnClose(form)
 
     #--------------------------------------------------------------------------
@@ -477,7 +482,7 @@ class PatchingCodeViewer(ida_kernwin.simplecustviewer_t):
         if not super().Create('PatchingCodeViewer'):
             return False
         self._twidget = self.GetWidget()
-        self.widget = ida_kernwin.PluginForm.TWidgetToPyQtWidget(self._twidget)
+        self.widget = twidget_to_qwidget(self._twidget)
         self._ui_hooks.hook()
         return True
 
@@ -498,6 +503,8 @@ class PatchingCodeViewer(ida_kernwin.simplecustviewer_t):
         #
 
         insn, insn_lineno = self.controller.get_insn_lineno(view_address)
+        if not insn:
+            return
 
         # compute the cursor's relative index into lines with the same address
         relative_idx = view_lineno - insn_lineno
@@ -506,7 +513,12 @@ class PatchingCodeViewer(ida_kernwin.simplecustviewer_t):
         self.controller.select_address(view_address, relative_idx)
 
     def OnPopup(self, form, popup_handle):
-        self._filter = remove_ida_actions(popup_handle)
+        #
+        # NOTE: we used to strip IDA's default viewer actions from this menu
+        # with remove_ida_actions(), but it dereferenced the native QMenu via
+        # ctypes which crashes newer IDA / Python / Qt builds
+        #
+
         return False
 
     #--------------------------------------------------------------------------

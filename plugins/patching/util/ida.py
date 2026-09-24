@@ -93,8 +93,14 @@ def apply_patches(filepath):
 
         def visitor(ea, file_offset, original_value, patched_value):
 
+            #
             # the patched byte does not have a know file address
-            if file_offset == ida_idaapi.BADADDR:
+            #
+            # NOTE: IDA passes file_offset as a signed qoff64_t, so an unmapped
+            # byte shows up as -1 rather than BADADDR on 64-bit IDA
+            #
+
+            if file_offset in (-1, ida_idaapi.BADADDR):
                 print("%08X: has no file mapping (original: %02X patched: %02X)...skipping...\n" % (ea, original_value, patched_value))
                 return 0
 
@@ -164,7 +170,7 @@ def attach_submenu_to_popup(popup_handle, submenu_name, prev_action_name):
 
     # cast an IDA 'popup handle' pointer back to a QMenu object
     p_qmenu = ctypes.cast(int(popup_handle), ctypes.POINTER(ctypes.c_void_p))[0]
-    qmenu = sip.wrapinstance(int(p_qmenu), QtWidgets.QMenu)
+    qmenu = wrapinstance(p_qmenu, QtWidgets.QMenu)
 
     # create a Qt (sub)menu that can be injected into an IDA-originating menu
     submenu = QtWidgets.QMenu(submenu_name)
@@ -893,7 +899,7 @@ def remove_ida_actions(popup):
 
     class FilterMenu(QtCore.QObject):
         def __init__(self, qmenu):
-            super(QtCore.QObject, self).__init__()
+            super(FilterMenu, self).__init__()
             self.qmenu = qmenu
 
         def eventFilter(self, obj, event):
@@ -901,13 +907,13 @@ def remove_ida_actions(popup):
                 return False
             for action in self.qmenu.actions():
                 if action.text() in ["&Font...", "&Synchronize with"]: # lol..
-                    qmenu.removeAction(action)
+                    self.qmenu.removeAction(action)
             self.qmenu.removeEventFilter(self)
             self.qmenu = None
             return True
 
     p_qmenu = ctypes.cast(int(popup), ctypes.POINTER(ctypes.c_void_p))[0]
-    qmenu = sip.wrapinstance(int(p_qmenu), QtWidgets.QMenu)
+    qmenu = wrapinstance(p_qmenu, QtWidgets.QMenu)
     filter = FilterMenu(qmenu)
     qmenu.installEventFilter(filter)
 

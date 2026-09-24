@@ -86,6 +86,19 @@ class PatchingPlugin(ida_idaapi.plugin_t):
         # inject a reference to the plugin context into the IDA console scope
         IDA_GLOBAL_SCOPE.patching = self
 
+        # register the plugin in IDA's addon list (Help -> About, IDA 7.7+)
+        try:
+            import ida_kernwin
+            addon = ida_kernwin.addon_info_t()
+            addon.id = "github.gaasedelen.patching"
+            addon.name = "Patching"
+            addon.producer = "Markus Gaasedelen"
+            addon.url = "https://github.com/gaasedelen/patching"
+            addon.version = patching.PatchingCore.PLUGIN_VERSION
+            ida_kernwin.register_addon(addon)
+        except AttributeError:
+            pass
+
         # mark the plugin as loaded
         return ida_idaapi.PLUGIN_KEEP
 

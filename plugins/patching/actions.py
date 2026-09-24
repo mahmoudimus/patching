@@ -112,19 +112,42 @@ class AssembleAction(ida_kernwin.action_handler_t):
     ICON = 'assemble.png'
     TEXT = "~A~ssemble..."
     TOOLTIP = "Assemble new instructions at the selected address"
-    HOTKEY = None
+    HOTKEY = 'Ctrl-Shift-A'
 
     def __init__(self, core):
         ida_kernwin.action_handler_t.__init__(self)
         self.core = core
 
     def activate(self, ctx):
+        target_ea = get_current_ea(ctx)
+        widget = ida_kernwin.find_widget(PatchingController.WINDOW_TITLE)
+        controller = self.core._active_patching_controller
 
-        # do not create a new patching dialog if one is already active
-        if ida_kernwin.find_widget(PatchingController.WINDOW_TITLE):
+        #
+        # if a patching dialog is already open, retarget it to the address
+        # that triggered this action rather than silently ignoring it
+        #
+
+        if widget and controller and controller.view:
+            controller.navigate(target_ea)
+            return 1
+        elif widget:
+            ida_kernwin.activate_widget(widget, True)
             return 1
 
-        wid = PatchingController(self.core, get_current_ea(ctx))
+        controller = PatchingController(self.core, target_ea)
+
+        #
+        # keep a strong reference for as long as IDA owns the native form,
+        # it will be released by the controller when the dialog is closed
+        #
+
+        self.core._active_patching_controller = controller
+
+        # fallback to a native IDA prompt if the Qt dialog is unavailable
+        if controller.view is None:
+            controller.interactive()
+            controller.close()
 
         # return 1 to refresh the IDA views
         return 1

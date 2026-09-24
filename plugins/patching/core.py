@@ -37,9 +37,9 @@ from patching.util.python import register_callback, notify_callback
 class PatchingCore(object):
 
     PLUGIN_NAME    = 'Patching'
-    PLUGIN_VERSION = '0.2.0'
+    PLUGIN_VERSION = '0.3.0'
     PLUGIN_AUTHORS = 'Markus Gaasedelen'
-    PLUGIN_DATE    = '2024'
+    PLUGIN_DATE    = '2026'
 
     def __init__(self, defer_load=False):
 
@@ -81,6 +81,14 @@ class PatchingCore(object):
         # plugin events / callbacks
         self._patches_changed_callbacks = []
         self._refresh_timer = None
+
+        #
+        # strongly retain the active patching dialog controller until it is
+        # closed. otherwise, the controller/view cycle can be collected while
+        # IDA still holds native PluginForm callbacks into it
+        #
+
+        self._active_patching_controller = None
 
         #
         # defer fully loading the plugin core until the IDB and UI itself
@@ -926,11 +934,14 @@ class PatchingCore(object):
         #       | Jump in a new ...   |     '                 '
         #       |        ...          |
         #
-        # for now, we use the following 'HACK' API to create a submenu at the
-        # preferred location in the right click context menu
+        # NOTE: we used to use a 'HACK' API (attach_submenu_to_popup) to create
+        # a submenu at the preferred location in the right click context menu,
+        # but it dereferenced the native QMenu via ctypes which crashes newer
+        # IDA / Python / Qt builds. so we let IDA create the submenu from the
+        # action paths below instead, even if it lands in a worse position.
         #
 
-        self._patching_submenu = attach_submenu_to_popup(popup, "Patching", PREV_ACTION)
+        self._patching_submenu = None
 
         # extended list of 'less common' actions saved under a patching submenu
         ida_kernwin.attach_action_to_popup(widget, popup, "PatchByte", "Patching/")

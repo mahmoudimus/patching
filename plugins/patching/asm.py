@@ -1,3 +1,5 @@
+import re
+
 import ida_ua
 import ida_idp
 import ida_nalt
@@ -48,6 +50,9 @@ class KeystoneAssembler(object):
         self._arch = arch
         self._mode = mode | (keystone.KS_OPT_SYM_RESOLVER if TEST_KS_RESOLVER else 0)
         self._ks = keystone.Ks(arch, mode)
+
+        # the keystone error message from the most recent failed assembly
+        self.last_error = ''
 
         # TODO/XXX: the keystone sym resolver callback is only for DEV / testing
         if TEST_KS_RESOLVER:
@@ -208,21 +213,22 @@ class KeystoneAssembler(object):
         else:
             raw_assembly = unaliased_assembly
 
+        # apply CPU-specific syntax fixups that keystone would otherwise reject
+        raw_assembly = self.fixup_syntax(raw_assembly, ea)
+
         #print(" Assembling: '%s' @ ea 0x%08X" % (raw_assembly, ea))
 
-        #
-        # TODO: this whole function is kind of gross, and it would be good if
-        # we could surface at least 'some' of the error information that
-        # keystone can produce of failures
-        #
-
         # try assemble
+        self.last_error = ''
         try:
             asm_bytes, count = self._ks.asm(raw_assembly, ea, True)
             if asm_bytes == None:
                 return bytes()
+        except keystone.KsError as e:
+            self.last_error = str(e)
+            return bytes()
         except Exception as e:
-            #print("FAIL", e)
+            self.last_error = str(e)
             return bytes()
 
         # return the generatied instruction bytes if keystone succeeded
@@ -406,6 +412,12 @@ class KeystoneAssembler(object):
         """
         return assembly
 
+    def fixup_syntax(self, assembly, ea):
+        """
+        Rewrite (symbol-resolved) assembly text into a form keystone accepts.
+        """
+        return assembly
+
 #------------------------------------------------------------------------------
 # x86 / x86_64
 #------------------------------------------------------------------------------
@@ -462,6 +474,17 @@ class AsmX86(KeystoneAssembler):
     #--------------------------------------------------------------------------
     # Intel Assembly Formatting / Fixups
     #--------------------------------------------------------------------------
+
+    # MASM-style hex immediates (eg. '0bh'), keystone misreads '0b..' as binary
+    _MASM_HEX_RE = re.compile(r'(?<![\w$@?.])([0-9][0-9a-fA-F]*)([hH])\b')
+
+    # IDA-isms that keystone rejects in user input (eg. 'jmp short loc_401000')
+    _IDA_KEYWORDS_RE = re.compile(r'\b(?:short|near\s+ptr|large|offset)\s+', re.I)
+
+    def fixup_syntax(self, assembly, ea):
+        assembly = self._IDA_KEYWORDS_RE.sub('', assembly)
+        assembly = self._MASM_HEX_RE.sub(lambda m: m.group(1).upper() + m.group(2), assembly)
+        return assembly
 
     def format_mnemonic(self, insn, mnemonic):
         original = mnemonic.strip()
@@ -795,6 +818,24 @@ class AsmARM(KeystoneAssembler):
         op_text = ida_ua.print_operand(insn.ea, n, 0, self._NO_OP_TYPE)
         return op_text
 
+    _ARM_CONDS = 'eq|ne|cs|hs|cc|lo|mi|pl|vs|vc|hi|ls|ge|lt|gt|le|al'
+
+    # pre-UAL conditional load/store (eg. 'streqb' --> 'strbeq'), keystone only takes UAL
+    _PRE_UAL_LDR_RE = re.compile(r'^(\s*)(ldr|str)(%s)(sb|sh|bt|b|h|d|t)(?=[\s.]|$)' % _ARM_CONDS, re.I)
+    _PRE_UAL_LDM_RE = re.compile(r'^(\s*)(ldm|stm)(%s)(ia|ib|da|db|fd|fa|ed|ea)(?=[\s.]|$)' % _ARM_CONDS, re.I)
+
+    # IDA shows a '.W' width qualifier on THUMB MOVT / MOVW that keystone rejects
+    _THUMB_MOVTW_RE = re.compile(r'^(\s*mov[tw])\.w\b', re.I)
+
+    def fixup_syntax(self, assembly, ea):
+        if self._arch != keystone.KS_ARCH_ARM:
+            return assembly
+        assembly = self._PRE_UAL_LDR_RE.sub(r'\1\2\4\3', assembly)
+        assembly = self._PRE_UAL_LDM_RE.sub(r'\1\2\4\3', assembly)
+        if self.is_thumb(ea):
+            assembly = self._THUMB_MOVTW_RE.sub(r'\1', assembly)
+        return assembly
+
     def unalias(self, assembly):
         prefix, mnemonic, ops = parse_disassembly_components(assembly)
 
@@ -824,6 +865,23 @@ class AsmPPC(KeystoneAssembler):
 
         # initialize keystone-based assembler
         super(AsmPPC, self).__init__(arch, mode)
+
+    # IDA register names (eg. 'r3', 'f1', 'sp', 'rtoc'), keystone only takes numbers
+    _PPC_REG_RE = re.compile(r'(?<![\w$@?.])(?:[rf]([0-9]|[12][0-9]|3[01])|(sp)|(rtoc))\b', re.I)
+
+    def fixup_syntax(self, assembly, ea):
+        mnem, sep, ops = assembly.strip().partition(' ')
+        if not sep:
+            return assembly
+
+        def reg_number(m):
+            if m.group(2):
+                return '1'
+            if m.group(3):
+                return '2'
+            return m.group(1)
+
+        return mnem + sep + self._PPC_REG_RE.sub(reg_number, ops)
 
 #------------------------------------------------------------------------------
 # MIPS / MIPS64 TODO
