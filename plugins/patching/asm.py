@@ -54,6 +54,12 @@ class KeystoneAssembler(object):
         # the keystone error message from the most recent failed assembly
         self.last_error = ''
 
+        # pre-assemble a NOP for repeated use (not every CPU has a 'nop')
+        try:
+            self._nop_bytes, _ = self._ks.asm('nop', as_bytes=True)
+        except keystone.KsError:
+            self._nop_bytes = None
+
         # TODO/XXX: the keystone sym resolver callback is only for DEV / testing
         if TEST_KS_RESOLVER:
             self._ks.sym_resolver = self._ks_sym_resolver
@@ -251,17 +257,23 @@ class KeystoneAssembler(object):
         Generate a NOP buffer for the given address range.
         """
         range_size = end_ea - start_ea
-        if range_size < 0:
+        if range_size <= 0:
             return bytes()
 
         # fetch the bytes for a NOP instruction (and its size)
-        nop_data = self.asm('nop', start_ea)
+        nop_data = self._nop_bytes or self.asm('nop', start_ea)
+        if not nop_data:
+            return bytes()
         nop_size = len(nop_data)
 
-        # generate a buffer of NOP's equal to the range we are filling in
-        nop_buffer = nop_data * (range_size // nop_size)
+        #
+        # generate a buffer of NOP's that covers the entire range we are
+        # filling in. with multi-byte NOP's, the range may not be an exact
+        # multiple of the NOP size so we round up and truncate to fit
+        #
 
-        return nop_buffer
+        count = (range_size + nop_size - 1) // nop_size
+        return (nop_data * count)[:range_size]
 
     #--------------------------------------------------------------------------
     # Assembly Normalization
@@ -535,7 +547,7 @@ class AsmX86(KeystoneAssembler):
             #
 
             start, sep, remaining = op_text.partition(':')
-            if sep and remaining[0] != ':':
+            if sep and remaining and remaining[0] != ':':
                 op_text = start + sep + '[' + remaining + ']'
 
             #
@@ -637,7 +649,7 @@ class AsmARM(KeystoneAssembler):
         # ARM
         'BEQ', 'BNE', 'BCC', 'BCS', 'BVC', 'BVS',
         'BMI', 'BPL', 'BHS', 'BLO', 'BHI', 'BLS',
-        'BGE', 'BLT', 'BGT', 'BLE'
+        'BGE', 'BLT', 'BGT', 'BLE',
 
         # ARM64
         'B.EQ', 'B.NE', 'B.CS', 'B.CC', 'B.MI', 'B.PL',
@@ -805,7 +817,7 @@ class AsmARM(KeystoneAssembler):
 
         op_text = ida_lines.tag_remove(super(AsmARM, self).format_memory_op(insn, n))
 
-        if op_text[0] == '=':
+        if op_text and op_text[0] == '=':
             op_text = '#0x%X' % op.addr
 
         return op_text
@@ -846,10 +858,21 @@ class AsmARM(KeystoneAssembler):
         return assembly
 
 #------------------------------------------------------------------------------
-# PPC / PPC64 TODO
+# PPC / PPC64
 #------------------------------------------------------------------------------
 
 class AsmPPC(KeystoneAssembler):
+    """
+    PowerPC specific wrapper for Keystone.
+    """
+
+    UNCONDITIONAL_JUMP = 'B'
+    CONDITIONAL_JUMPS = \
+    [
+        'BEQ', 'BNE', 'BLT', 'BGT', 'BLE', 'BGE',
+        'BNS', 'BSO', 'BUN', 'BNU',
+        'BDNZ', 'BDZ'
+    ]
 
     def __init__(self):
         arch = keystone.KS_ARCH_PPC
@@ -859,9 +882,11 @@ class AsmPPC(KeystoneAssembler):
         else:
             mode = keystone.KS_MODE_PPC32
 
-        # TODO: keystone does not support Little Endian mode for PPC?
-        #if arch_name == 'ppc':
-        #    mode += keystone.KS_MODE_BIG_ENDIAN
+        # NOTE: keystone only supports little endian for PPC64 (KS_ERR_MODE on PPC32)
+        if ida_ida.inf_is_be():
+            mode |= keystone.KS_MODE_BIG_ENDIAN
+        else:
+            mode |= keystone.KS_MODE_LITTLE_ENDIAN
 
         # initialize keystone-based assembler
         super(AsmPPC, self).__init__(arch, mode)
@@ -884,10 +909,24 @@ class AsmPPC(KeystoneAssembler):
         return mnem + sep + self._PPC_REG_RE.sub(reg_number, ops)
 
 #------------------------------------------------------------------------------
-# MIPS / MIPS64 TODO
+# MIPS / MIPS64
 #------------------------------------------------------------------------------
 
 class AsmMIPS(KeystoneAssembler):
+    """
+    MIPS specific wrapper for Keystone.
+    """
+
+    # NOTE: 'B' is PC-relative, so it has the same reach as the branch it replaces
+    UNCONDITIONAL_JUMP = 'B'
+    CONDITIONAL_JUMPS = \
+    [
+        'BEQ', 'BNE', 'BEQL', 'BNEL',
+        'BEQZ', 'BNEZ', 'BEQZL', 'BNEZL',
+        'BGTZ', 'BLEZ', 'BGEZ', 'BLTZ',
+        'BGTZL', 'BLEZL', 'BGEZL', 'BLTZL',
+        'BC1T', 'BC1F'
+    ]
 
     def __init__(self):
         arch = keystone.KS_ARCH_MIPS
@@ -905,11 +944,32 @@ class AsmMIPS(KeystoneAssembler):
         # initialize keystone-based assembler
         super(AsmMIPS, self).__init__(arch, mode)
 
+    def fixup_syntax(self, assembly, ea):
+
+        #
+        # by default keystone fills branch delay slots with a NOP, turning a
+        # single branch into 8 bytes that would clobber the instruction that
+        # already occupies the delay slot. assemble exactly what was typed
+        #
+
+        return '.set noreorder; ' + assembly
+
 #------------------------------------------------------------------------------
-# SPARC TODO
+# SPARC / SPARC64
 #------------------------------------------------------------------------------
 
 class AsmSPARC(KeystoneAssembler):
+    """
+    SPARC specific wrapper for Keystone.
+    """
+
+    UNCONDITIONAL_JUMP = 'BA'
+    CONDITIONAL_JUMPS = \
+    [
+        'BE', 'BNE', 'BG', 'BGE', 'BL', 'BLE',
+        'BGU', 'BLEU', 'BCC', 'BCS', 'BGEU', 'BLU',
+        'BPOS', 'BNEG', 'BVC', 'BVS'
+    ]
 
     def __init__(self):
         arch = keystone.KS_ARCH_SPARC
@@ -932,6 +992,69 @@ class AsmSPARC(KeystoneAssembler):
 #------------------------------------------------------------------------------
 
 class AsmSystemZ(KeystoneAssembler):
+    """
+    System-Z (s390x) specific wrapper for Keystone.
+    """
+
+    UNCONDITIONAL_JUMP = 'J'
+    CONDITIONAL_JUMPS = \
+    [
+        'JE', 'JNE', 'JZ', 'JNZ',
+        'JL', 'JLE', 'JH', 'JHE', 'JNH', 'JNL',
+        'JO', 'JNO', 'JP', 'JNP', 'JM', 'JNM'
+    ]
 
     def __init__(self):
+
+        # initialize keystone-based assembler (System-Z is always big endian)
         super(AsmSystemZ, self).__init__(keystone.KS_ARCH_SYSTEMZ, keystone.KS_MODE_BIG_ENDIAN)
+
+        #
+        # keystone has no 'nop' mnemonic for System-Z, so use the 2 byte
+        # 'nopr' encoding (bcr 0, %r0). every instruction is 2, 4, or 6 bytes
+        #
+
+        self._nop_bytes, _ = self._ks.asm('bcr 0, %r0', as_bytes=True)
+
+#------------------------------------------------------------------------------
+# Hexagon
+#------------------------------------------------------------------------------
+
+class AsmHexagon(KeystoneAssembler):
+    """
+    Hexagon specific wrapper for Keystone.
+    """
+
+    # NOTE: rewriting Hexagon branches (packets) is non-trivial, so ForceJump is disabled
+    UNCONDITIONAL_JUMP = 'JUMP'
+    CONDITIONAL_JUMPS = []
+
+    def __init__(self):
+        arch = keystone.KS_ARCH_HEXAGON
+
+        if ida_ida.inf_is_be():
+            mode = keystone.KS_MODE_BIG_ENDIAN
+        else:
+            mode = keystone.KS_MODE_LITTLE_ENDIAN
+
+        # initialize keystone-based assembler
+        super(AsmHexagon, self).__init__(arch, mode)
+
+#------------------------------------------------------------------------------
+# EVM
+#------------------------------------------------------------------------------
+
+class AsmEVM(KeystoneAssembler):
+    """
+    Ethereum Virtual Machine specific wrapper for Keystone.
+    """
+
+    # NOTE: rewriting JUMPI to JUMP breaks the stack layout, so ForceJump is disabled
+    UNCONDITIONAL_JUMP = 'JUMP'
+    CONDITIONAL_JUMPS = []
+
+    def __init__(self):
+        super(AsmEVM, self).__init__(keystone.KS_ARCH_EVM, 0)
+
+        # EVM has no NOP, JUMPDEST (0x5B) is the closest 'do nothing' opcode
+        self._nop_bytes = b'\x5B'

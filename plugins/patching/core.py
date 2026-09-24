@@ -14,6 +14,7 @@ import ida_segment
 import idautils
 
 from patching.asm import *
+import patching.keystone as keystone
 from patching.actions import *
 from patching.exceptions import *
 
@@ -164,27 +165,40 @@ class PatchingCore(object):
         Initialize the assembly engine to be used for patching.
         """
         arch_name = ida_ida.inf_get_procname()
+        proc = (arch_name or '').lower()
 
-        if arch_name == 'metapc':
-            assembler = AsmX86()
-        elif arch_name.startswith('arm') or arch_name.startswith('ARM'):
-            assembler = AsmARM()
-
-        #
-        # TODO: disabled until v0.2.0
-        #
-        #elif arch_name.startswith("ppc"):
-        #    assembler = AsmPPC(inf)
-        #elif arch_name.startswith("mips"):
-        #    assembler = AsmMIPS(inf)
-        #elif arch_name.startswith("sparc"):
-        #    assembler = AsmSPARC(inf)
-        #elif arch_name.startswith("systemz") or arch_name.startswith("s390x"):
-        #    assembler = AsmSystemZ(inf)
-        #
-
+        if proc == 'metapc':
+            assembler_type = AsmX86
+        elif proc.startswith('arm') or proc.startswith('aarch64'):
+            assembler_type = AsmARM
+        elif proc.startswith('ppc') or proc.startswith('powerpc'):
+            assembler_type = AsmPPC
+        elif proc.startswith('mips'):
+            assembler_type = AsmMIPS
+        elif proc.startswith('sparc'):
+            assembler_type = AsmSPARC
+        elif proc.startswith('systemz') or proc.startswith('s390'):
+            assembler_type = AsmSystemZ
+        elif proc.startswith('hexagon'):
+            assembler_type = AsmHexagon
+        elif proc.startswith('evm'):
+            assembler_type = AsmEVM
         else:
-            assembler = None
+            assembler_type = None
+
+        #
+        # keystone may not support every mode of a CPU family that it knows
+        # (eg. 32bit little endian PPC), in which case we treat the CPU as
+        # unsupported rather than failing to load
+        #
+
+        assembler = None
+        if assembler_type:
+            try:
+                assembler = assembler_type()
+            except keystone.KsError as e:
+                print(" - Keystone does not support this CPU mode: '%s' (%s)" % (arch_name, e))
+        else:
             print(" - Unsupported CPU: '%s' (%s)" % (arch_name, ida_nalt.get_input_file_path()))
 
         self.assembler = assembler
@@ -202,6 +216,13 @@ class PatchingCore(object):
         # read the install.py script (easy install) for a bit more context of
         # why we're trying to minimize exposure to Keystone on unload
         #
+
+        if not self.assembler:
+            return
+
+        # the ARM assembler holds a second (THUMB) keystone instance
+        if getattr(self.assembler, '_ks_thumb', None):
+            del self.assembler._ks_thumb
 
         del self.assembler._ks
         del self.assembler
