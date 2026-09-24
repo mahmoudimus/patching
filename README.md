@@ -31,22 +31,6 @@ hcli plugin install patching-ng
 
 Upgrade with `hcli plugin upgrade patching-ng` and remove with `hcli plugin uninstall patching-ng`.
 
-## Easy Install
-
-Alternatively, run the following line in the IDA console to automatically install the plugin:
-
-### Windows / Linux
-
-```python
-import urllib.request as r; exec(r.urlopen('https://github.com/mahmoudimus/patching/raw/main/install.py').read())
-```
-
-### macOS
-
-```python
-import urllib.request as r; exec(r.urlopen('https://github.com/mahmoudimus/patching/raw/main/install.py', cafile='/etc/ssl/cert.pem').read())
-```
-
 ## Manual Install
 
 Alternatively, the plugin can be manually installed by downloading `patching.zip` from the [releases](https://github.com/mahmoudimus/patching/releases) page and unzipping it to your plugins folder, or by copying the contents of this repository's `plugins/` folder there. The [Keystone](plugins/patching/keystone/README.md) libraries for Windows, Linux and macOS are included.

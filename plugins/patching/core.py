@@ -225,10 +225,8 @@ class PatchingCore(object):
         #
         # NOTE: this is kind of aggressive attempt at deleting the assembler
         # and Keystone components in an effort to keep things safe if the user
-        # is trying to do an easy install (updating) over the existing plugin
-        #
-        # read the install.py script (easy install) for a bit more context of
-        # why we're trying to minimize exposure to Keystone on unload
+        # is updating the plugin in place (eg. 'hcli plugin upgrade') while
+        # IDA still has the Keystone library loaded (and locked, on Windows)
         #
 
         if not self.assembler:
