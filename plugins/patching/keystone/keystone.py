@@ -44,8 +44,9 @@ if _found == False:
 
 if _found == False:
     # last try: loading from python lib directory
-    import distutils.sysconfig
-    _lib_path = distutils.sysconfig.get_python_lib()
+    # (distutils was removed in python 3.12, use sysconfig instead)
+    import sysconfig
+    _lib_path = sysconfig.get_paths()['purelib']
     for _lib in _all_libs:
         try:
             _lib_file = join(_lib_path, 'keystone', _lib)

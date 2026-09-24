@@ -1,11 +1,21 @@
 # Keystone Engine (Patching)
 
-This IDA plugin is currently self-shipping a [fork](https://github.com/gaasedelen/keystone) of the ubiquitous [Keystone Engine](https://github.com/keystone-engine/keystone) rather than using the PyPI version.
+This plugin ships its own build of the [Keystone Engine](https://github.com/keystone-engine/keystone) rather than using the PyPI `keystone-engine` package. The PyPI package (0.9.2, 2020) has no Apple Silicon or Linux ARM builds, and it lacks fixes from [gaasedelen/keystone](https://github.com/gaasedelen/keystone) that the plugin relies on. One example: Keystone could loop forever on some invalid statements, and the patching dialog assembles on every keystroke.
 
-This is simply out of convenience for distributing fixes or making breaking changes for the betterment of the plugin.
+## Contents
 
-# Why is this folder empty?
+| File | Platform | SHA-256 |
+|---|---|---|
+| `libkeystone.dylib` | macOS (universal x86_64 + arm64) | `a2e43a1832999d8feba32f0da0977ca7594745c1f08ed09ee01841a0dc5cc426` |
+| `libkeystone.so` | Linux x86_64 | `fab7cf0730e3ace1da3bb5d5ae40bc9d06e6ee0683ff88eddb26f978b6646832` |
+| `keystone.dll` | Windows x86_64 | `84f132091b1cd5506d970f921b546d18064cb2d595531c75c7cfa60e41e2528f` |
 
-The directory that you're reading this in will be populated by a GitHub [Workflow](https://github.com/gaasedelen/patching/blob/main/.github/workflows/package-plugin.yaml) that packages the plugin for distribution.
+The libraries, `COPYING` and `LICENSE.TXT` are byte-identical to the ones in the [v0.2.0 release](https://github.com/gaasedelen/patching/releases/tag/v0.2.0) of gaasedelen/patching (`patching_macos.zip`, `patching_linux.zip`, `patching_win32.zip`), built by gaasedelen/keystone's CI.
 
-You should always download the final, distributable version of the plugin from the [releases](https://github.com/gaasedelen/patching/releases) page of the plugin repo. If you cloned the repo and tried to manually install the plugin, that's probably why it's not working and you're here reading this ;-)
+The Python bindings (`keystone.py`, `*_const.py`) come from the same release. One local change: the last-resort library search no longer uses `distutils`, which was removed in Python 3.12.
+
+`keystone.py` tries each platform's library name in turn from this directory, so all three libraries can live side by side.
+
+## License
+
+The Keystone engine libraries are licensed under GPLv2 (`COPYING`). The Python bindings are licensed under a BSD 3-clause license (`LICENSE.TXT`). Both files are redistributed unchanged. The rest of the plugin is MIT licensed, and upstream's release zips already shipped these same files alongside it.
