@@ -6,7 +6,7 @@ import ida_kernwin
 
 from patching.util.qt import QT_AVAILABLE
 from patching.util.ida import parse_disassembly_components, scrape_symbols
-from patching.util.python import hexdump
+from patching.util.python import hexdump, split_comment
 
 if QT_AVAILABLE:
     from patching.ui.preview_ui import PatchingDockable
@@ -38,6 +38,9 @@ class PatchingController(object):
         self.address_idx = LAST_LINE_IDX
         self.assembly_text = ''
         self.assembly_bytes = b''
+
+        # an optional comment typed after the assembly (eg. 'nop ; why')
+        self.assembly_comment = ''
 
         # for error text or other dynamic information to convey to the user
         self.status_message = ''
@@ -211,6 +214,10 @@ class PatchingController(object):
         # patch the instruction at the current address
         self.core.patch(self.address, self.assembly_bytes)
 
+        # annotate the patched instruction with the user's comment, if any
+        if self.assembly_comment:
+            ida_bytes.set_cmt(self.address, self.assembly_comment, False)
+
         # refresh lines
         self._refresh_lines()
 
@@ -221,6 +228,20 @@ class PatchingController(object):
         self.assembly_text = assembly_text
         self.assembly_bytes = bytes()
         self.status_message = ''
+
+        #
+        # split off a trailing comment, using IDA's comment character ';' or
+        # a C++ style '//'. neither appears within the operands of the
+        # supported CPUs, unlike '#' (eg. ARM / Hexagon immediates)
+        #
+        #   eg. 'xor eax, eax ; clear the return value'
+        #
+
+        assembly_text, self.assembly_comment = split_comment(assembly_text)
+
+        # nothing to assemble (eg. the input was only a comment)
+        if not assembly_text.strip():
+            return
 
         #
         # before trying to assemble the user input, we'll try to check for a
@@ -273,24 +294,16 @@ class PatchingController(object):
 
         #
         # TODO: in v0.2.0 we should try to to re-enable multi-instruction
-        # inputs. the only reason it is 'disabled' for now is that I need more
-        # time to better define its behavior in the context of the plugin
+        # inputs. keystone supports 'xor eax, eax; ret;' just fine, but ';'
+        # is now treated as the start of a comment (see split_comment)
         #
-        # NOTE: Keystone supports 'xor eax, eax; ret;' just fine, it's purely
-        # ensuring the rest of this plugin / wrapping layers are going to
-        # handle it okay
-        #
-
-        if ';' in assembly_normalized:
-            self.status_message = "Multi-instruction input not yet supported (';' not allowed)"
-            return
 
         #
         # we didn't catch any 'early' issues with the user input, go ahead
         # and try to assemble it to see what happens
         #
 
-        self.assembly_bytes = self.core.assemble(self.assembly_text, self.address)
+        self.assembly_bytes = self.core.assemble(assembly_text, self.address)
         if not self.assembly_bytes:
             self.status_message = self.core.assembler.last_error or '...' # error assembling
 

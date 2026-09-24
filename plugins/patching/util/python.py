@@ -226,3 +226,15 @@ def _recursive_reload(module, target_name, visited):
 
     #print("Okay done with %s, reloading self!" % module.__name__)
     reload(module)
+
+def split_comment(text, markers=(';', '//')):
+    """
+    Split 'text ; comment' into ('text', 'comment') at the first marker.
+    """
+    positions = [pos for pos in map(text.find, markers) if pos != -1]
+    if not positions:
+        return (text, '')
+
+    pos = min(positions)
+    comment = text[pos:].lstrip(''.join(markers)).strip()
+    return (text[:pos].rstrip(), comment)
