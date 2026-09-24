@@ -14,35 +14,46 @@
             "9.4",
             "10.0"
         ],
-        "description": "Patch some shit",
+        "description": "Interactive binary patching for IDA Pro: assemble, NOP, force jumps, revert, and apply patches back to the executable",
         "categories": [
-            "collaboration-and-productivity",
-            "decompilation",
-            "debugging-and-tracing"
+            "disassembly-and-processor-modules",
+            "vulnerability-research-and-exploit-development",
+            "malware-analysis"
         ],
         "keywords": [
-            "binary-patterns",
-            "function-identification",
+            "patching",
+            "binary-patching",
+            "assembler",
+            "keystone",
+            "nop",
+            "force-jump",
             "x86",
             "x64",
             "arm",
-            "armv7",
             "aarch64",
             "thumb",
+            "ppc",
             "mips",
-            "mipsel",
-            "signature-generation",
-            "signature-search"
+            "sparc",
+            "systemz",
+            "hexagon",
+            "evm"
         ],
         "license": "MIT",
         "urls": {
-            "repository": "https://github.com/gaasedelen/patching",
-            "homepage": "https://github.com/gaasedelen"
+            "repository": "https://github.com/mahmoudimus/patching",
+            "homepage": "https://github.com/gaasedelen/patching"
         },
         "authors": [
             {
-                "name": "gaasedelen",
+                "name": "Markus Gaasedelen",
                 "email": "contact@ret2.io"
+            }
+        ],
+        "maintainers": [
+            {
+                "name": "Mahmoud Rusty Abdelkader",
+                "email": "mabdelkader@gmail.com"
             }
         ]
     }
