@@ -68,9 +68,8 @@ class PatchingDockable(ida_kernwin.PluginForm):
         """
         self.widget.setMinimumSize(350, 350)
 
-        # setup a monospace font for code / text printing
-        self._font = QtGui.QFont("Courier New")
-        self._font.setStyleHint(QtGui.QFont.Monospace)
+        # use the same font as IDA's disassembly for code / text printing
+        self._font = get_disassembly_font()
 
         # initialize our ui elements
         self._ui_init_code()

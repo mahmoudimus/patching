@@ -151,6 +151,36 @@ def apply_patches(filepath):
 # IDA UI
 #------------------------------------------------------------------------------
 
+def get_disassembly_font():
+    """
+    Return a QFont matching the font IDA uses for its disassembly views.
+    """
+    import ida_registry
+
+    #
+    # IDA stores the fonts chosen in Options -> Font... under 'Font\<view>'
+    # in its registry (ida.reg). if the user never changed the disassembly
+    # font, fall back to the system's fixed-width font
+    #
+
+    key = "Font\\Disassembly"
+
+    name = ida_registry.reg_read_string("Name", key, None)
+    if name:
+        font = QtGui.QFont(name)
+    else:
+        font = QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont)
+
+    size = ida_registry.reg_read_int("Size", 0, key)
+    if size > 0:
+        font.setPointSize(size)
+
+    font.setBold(bool(ida_registry.reg_read_int("Bold", 0, key)))
+    font.setItalic(bool(ida_registry.reg_read_int("Italic", 0, key)))
+    font.setStyleHint(QtGui.QFont.Monospace)
+
+    return font
+
 def attach_submenu_to_popup(popup_handle, submenu_name, prev_action_name):
     """
     Create an IDA submenu AFTER the action name specified by prev_action_name.
