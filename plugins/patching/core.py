@@ -19,7 +19,7 @@ from patching.actions import *
 from patching.exceptions import *
 
 from patching.util.ida import *
-from patching.util.misc import plugin_resource
+from patching.util.misc import plugin_resource, resign_macho
 from patching.util.python import register_callback, notify_callback
 
 #------------------------------------------------------------------------------
@@ -571,6 +571,9 @@ class PatchingCore(object):
             apply_patches(target_filepath)
         except Exception:
             raise PatchApplicationError("Failed to write patches into the target file", target_filepath)
+
+        # a patched Mach-O needs a new code signature to run on macOS
+        resign_macho(target_filepath)
 
         # patching seems successful? update the stored filepath to the patched binary
         self.patched_filepath = target_filepath
