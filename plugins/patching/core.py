@@ -44,6 +44,9 @@ class PatchingCore(object):
 
     def __init__(self, defer_load=False):
 
+        # whether load() has already run for this database
+        self._loaded = False
+
         # IDA UI Hooks
         self._ui_hooks = UIHooks()
         self._ui_hooks.ready_to_run = self.load
@@ -117,6 +120,16 @@ class PatchingCore(object):
         Load the plugin core.
         """
 
+        #
+        # load() can be triggered more than once for the same database. eg,
+        # 'ida -A' sets the batch flag in the GUI, so both ready_to_run and
+        # auto_empty_finally fire, which would double register actions/hooks
+        #
+
+        if self._loaded:
+            return
+        self._loaded = True
+
         # attempt to initialize an assembler engine matching the database
         self._init_assembler()
 
@@ -144,6 +157,7 @@ class PatchingCore(object):
         Unload the plugin core.
         """
         self._idb_hooks.unhook()
+        self._loaded = False
 
         if not self.assembler:
             return
