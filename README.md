@@ -21,9 +21,19 @@ This plugin requires IDA 7.6 and Python 3. It supports Windows, Linux, and macOS
 
 *Please note, older versions of IDA (8.2 and below) are [not compatible](https://hex-rays.com/products/ida/news/8_2sp1/) with Python 3.11 and above.*
 
+## HCLI (IDA 9.0+)
+
+With [HCLI](https://hcli.docs.hex-rays.com/), the IDA plugin manager, run:
+
+```
+hcli plugin install patching-ng
+```
+
+Upgrade with `hcli plugin upgrade patching-ng` and remove with `hcli plugin uninstall patching-ng`.
+
 ## Easy Install
 
-Run the following line in the IDA console to automatically install the plugin:
+Alternatively, run the following line in the IDA console to automatically install the plugin:
 
 ### Windows / Linux
 

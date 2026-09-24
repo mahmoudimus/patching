@@ -2,7 +2,7 @@
     "$schema": "https://hcli.docs.hex-rays.com/schemas/ida-plugin.json",
     "IDAMetadataDescriptorVersion": 1,
     "plugin": {
-        "name": "patching",
+        "name": "patching-ng",
         "entryPoint": "patching.py",
         "version": "0.3.0",
         "idaVersions": [
