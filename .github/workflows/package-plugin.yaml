@@ -1,6 +1,13 @@
 name: Package IDA Plugin 📦
 
-on: push
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   package:
@@ -8,29 +15,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Download workflow artifact
-      uses: dawidd6/action-download-artifact@v6
-      with:
-
-        # the target repo for external artifacts (built libs)
-        repo: gaasedelen/keystone
-        branch: master
-
-        # token to fetch artifacts from the repo
-        github_token: ${{secrets.KEYSTONE_PATCHING_TOKEN}}
-
-        # which workflow to search for artifacts
-        workflow: python-publish.yml
-        workflow_conclusion: success
-
-    - name: Package distributions
-      shell: bash
+    # keystone is vendored in plugins/patching/keystone, so one package works on every platform
+    - name: Package plugin
       run: |
-        mkdir dist && cd dist
-        mkdir win32 && cp -r ../plugins/* ./win32/ && cp -r ../artifact_windows-latest/* ./win32/patching/keystone && cd ./win32 && zip -r ../patching_win32.zip ./* && cd ..
-        mkdir linux && cp -r ../plugins/* ./linux/ && cp -r ../artifact_ubuntu-latest/* ./linux/patching/keystone && cd ./linux && zip -r ../patching_linux.zip ./* && cd ..
-        mkdir darwin && cp -r ../plugins/* ./darwin/ && cp -r ../artifact_macos-latest/* ./darwin/patching/keystone && cd ./darwin && zip -r ../patching_macos.zip ./* && cd ..
+        mkdir dist
+        cd plugins && zip -r ../dist/patching.zip . -x '*/__pycache__/*' '*.pyc'
 
     - uses: actions/upload-artifact@v4
       with:
-         path: ${{ github.workspace }}/dist/*.zip
+        name: patching
+        path: dist/patching.zip
+
+    - name: Publish release
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create "${{ github.ref_name }}" dist/patching.zip --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes

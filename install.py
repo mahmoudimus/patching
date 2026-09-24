@@ -50,7 +50,7 @@ SUPPORTED_ENVIRONMENT = bool(SUPPORTED_IDA and SUPPORTED_PYTHON)
 #------------------------------------------------------------------------------
 
 PLUGIN_NAME = 'Patching'
-PLUGIN_URL = 'https://api.github.com/repos/gaasedelen/patching/releases/latest'
+PLUGIN_URL = 'https://api.github.com/repos/mahmoudimus/patching/releases/latest'
 
 def install_plugin():
     """
@@ -62,13 +62,8 @@ def install_plugin():
     plugins_directory = os.path.join(ida_diskio.get_user_idadir(), 'plugins')
     Path(plugins_directory).mkdir(parents=True, exist_ok=True)
 
-    # special handling to rename 'darwin' to macos (a bit more friendly)
-    platform_name = sys.platform
-    if platform_name == 'darwin':
-        platform_name = 'macos'
-
-    # compute the full filename of the plugin package to download from git
-    package_name = 'patching_%s.zip' % platform_name
+    # a single plugin package ships the keystone libraries for every platform
+    package_name = 'patching.zip'
 
     # fetch the plugin download info from the latest github releases
     print("[*] Fetching info from GitHub...")
