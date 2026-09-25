@@ -22,6 +22,8 @@ GPLv2 requires the corresponding source for these libraries to be available. It 
 
 That commit is the head of gaasedelen/keystone's `master` (2024-11-23), the day before the v0.2.0 release that the libraries came from. It is inferred from those dates: the build is not bit-for-bit reproducible, and the CI records that produced it have expired.
 
+mahmoudimus/keystone's `master` has since merged upstream keystone-engine's `master` ([`c0b646f`](https://github.com/mahmoudimus/keystone/commit/c0b646f)), adding upstream's CMake 4 / GCC 15 / MSVC build fixes and RISC-V support. gaasedelen's pinned commit does not configure with CMake 4. On macOS arm64 the merged build assembles 18,050 test inputs byte-for-byte identically to the vendored library, so the libraries have not been rebuilt: the submodule stays at `9ddb5e8` to match them.
+
 As of 2026-09, upstream keystone-engine has not picked up gaasedelen's fixes. gaasedelen never opened a pull request, and upstream has not changed the affected files (`llvm/lib/MC/MCParser/AsmParser.cpp` and the X86 asm parser and code emitter) since the fork diverged. Upstream's last release is still 0.9.2 (2020).
 
 The plugin never needs the submodule: `git clone` without `--recursive` is fine. Fetch the source with `git submodule update --init`.

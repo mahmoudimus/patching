@@ -1,4 +1,4 @@
-# Patching - Interactive Binary Patching for IDA Pro
+# patching-ng - Interactive Binary Patching for IDA Pro
 
 <p align="center"><img alt="Patching Plugin" src="screenshots/title.png"/></p>
 
@@ -6,11 +6,18 @@
 
 Patching assembly code to change the behavior of an existing program is not uncommon in malware analysis, software reverse engineering, and broader domains of security research. This project extends the popular [IDA Pro](https://www.hex-rays.com/products/ida/) disassembler to create a more robust interactive binary patching workflow designed for rapid iteration.
 
-This project is currently powered by a minor [fork](https://github.com/gaasedelen/keystone) of the ubiquitous [Keystone Engine](https://github.com/keystone-engine/keystone), supporting x86/x64 and Arm/Arm64 patching with plans to enable the remaining Keystone architectures in a future release.
+patching-ng is a maintained fork of Markus Gaasedelen's [Patching](https://github.com/gaasedelen/patching) plugin, with support for current IDA versions (9.2+, Qt6), more architectures, and installation through the IDA plugin manager.
 
-Special thanks to [Hex-Rays](https://hex-rays.com/) for supporting the development of this plugin.
+It is powered by [mahmoudimus/keystone](https://github.com/mahmoudimus/keystone), a fork of the ubiquitous [Keystone Engine](https://github.com/keystone-engine/keystone) that carries fixes the plugin relies on. It supports patching x86/x64, Arm/Arm64/Thumb, PPC/PPC64, MIPS/MIPS64, SPARC/SPARC64, SystemZ, Hexagon and EVM.
+
+Special thanks to [Hex-Rays](https://hex-rays.com/) for supporting the development of the original plugin.
 
 ## Releases
+
+* [v0.4.0](https://github.com/mahmoudimus/patching/releases/tag/v0.4.0) -- Install with HCLI (`install.py` removed); the Keystone source fork now includes upstream Keystone's build fixes
+* [v0.3.0](https://github.com/mahmoudimus/patching/releases/tag/v0.3.0) -- First patching-ng release: IDA 9.2+ (Qt6 / PySide6), PPC / MIPS / SPARC / SystemZ / Hexagon / EVM assemblers, patching dialog crash fixes, re-signing patched Mach-O binaries on macOS, comments on patched instructions, one cross-platform package with Keystone included
+
+Releases of the original plugin, by [gaasedelen](https://github.com/gaasedelen/patching/releases):
 
 * v0.2 -- Important bugfixes, IDA 9 compatibility
 * v0.1 -- Initial release
@@ -43,7 +50,7 @@ import ida_diskio, os; print(os.path.join(ida_diskio.get_user_idadir(), "plugins
 
 # Usage
 
-The patching plugin will automatically load for supported architectures (x86/x64/Arm/Arm64) and inject relevant patching actions into the right click context menu of the IDA disassembly views:
+The patching plugin will automatically load for supported architectures (x86/x64, Arm/Arm64/Thumb, PPC, MIPS, SPARC, SystemZ, Hexagon, EVM) and inject relevant patching actions into the right click context menu of the IDA disassembly views:
 
 <p align="center"><img alt="Patching plugin right click context menu" src="screenshots/usage.gif"/></p>
 
@@ -55,7 +62,7 @@ The main patching dialog can be launched via the Assemble action in the right cl
 
 <p align="center"><img alt="The interactive patching dialog" src="screenshots/assemble.gif"/></p>
 
-The assembly line is an editable field that can be used to modify instructions in real-time. Pressing enter will commit (patch) the entered instruction into the database.
+The assembly line is an editable field that can be used to modify instructions in real-time. Pressing enter will commit (patch) the entered instruction into the database. Text after `;` or `//` is added as a comment on the patched instruction (eg. `xor eax, eax ; clear the return value`).
 
 Your current location (a.k.a your cursor) will always be highlighted in green. Instructions that will be clobbered as a result of your patch / edit will be highlighted in red prior to committing the patch.
 
@@ -108,8 +115,7 @@ While it is 'easy' to revert bytes back to their original value, it can be 'hard
 
 Time and motivation permitting, future work may include:
 
-* Enable the remaining major architectures supported by Keystone:
-  * PPC32 / PPC64 / MIPS32 / MIPS64 / SPARC / SystemZ
+* RISC-V support (available in [mahmoudimus/keystone](https://github.com/mahmoudimus/keystone), not yet in the bundled build)
 * Multi instruction assembly (eg. `xor eax, eax; ret;`)
 * Multi line assembly (eg. shellcode / asm labels)
 * Interactive byte / data / string editing
@@ -123,8 +129,9 @@ Time and motivation permitting, future work may include:
      Raw:  mov     [rsp+20h], 3
   ```
 
-I welcome external contributions, issues, and feature requests. Please make any pull requests to the `develop` branch of this repository if you would like them to be considered for a future release.
+Issues, feature requests and pull requests are welcome on this repository's `main` branch.
 
 # Authors
 
-* Markus Gaasedelen ([@gaasedelen](https://twitter.com/gaasedelen))
+* Markus Gaasedelen ([@gaasedelen](https://twitter.com/gaasedelen)), original author
+* Mahmoud Rusty Abdelkader ([@mahmoudimus](https://github.com/mahmoudimus)), patching-ng maintainer
