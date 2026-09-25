@@ -14,6 +14,7 @@ Special thanks to [Hex-Rays](https://hex-rays.com/) for supporting the developme
 
 ## Releases
 
+* [v0.5.0](https://github.com/mahmoudimus/patching-ng/releases/tag/v0.5.0) -- Keystone rebuilt from [mahmoudimus/keystone](https://github.com/mahmoudimus/keystone) (gaasedelen's fixes + current upstream) by CI, with a cross-platform regression test; macOS 11+ and glibc 2.17+
 * [v0.4.0](https://github.com/mahmoudimus/patching-ng/releases/tag/v0.4.0) -- Install with HCLI (`install.py` removed); the Keystone source fork now includes upstream Keystone's build fixes
 * [v0.3.0](https://github.com/mahmoudimus/patching-ng/releases/tag/v0.3.0) -- First patching-ng release: IDA 9.2+ (Qt6 / PySide6), PPC / MIPS / SPARC / SystemZ / Hexagon / EVM assemblers, patching dialog crash fixes, re-signing patched Mach-O binaries on macOS, comments on patched instructions, one cross-platform package with Keystone included
 
