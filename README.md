@@ -14,8 +14,8 @@ Special thanks to [Hex-Rays](https://hex-rays.com/) for supporting the developme
 
 ## Releases
 
-* [v0.4.0](https://github.com/mahmoudimus/patching/releases/tag/v0.4.0) -- Install with HCLI (`install.py` removed); the Keystone source fork now includes upstream Keystone's build fixes
-* [v0.3.0](https://github.com/mahmoudimus/patching/releases/tag/v0.3.0) -- First patching-ng release: IDA 9.2+ (Qt6 / PySide6), PPC / MIPS / SPARC / SystemZ / Hexagon / EVM assemblers, patching dialog crash fixes, re-signing patched Mach-O binaries on macOS, comments on patched instructions, one cross-platform package with Keystone included
+* [v0.4.0](https://github.com/mahmoudimus/patching-ng/releases/tag/v0.4.0) -- Install with HCLI (`install.py` removed); the Keystone source fork now includes upstream Keystone's build fixes
+* [v0.3.0](https://github.com/mahmoudimus/patching-ng/releases/tag/v0.3.0) -- First patching-ng release: IDA 9.2+ (Qt6 / PySide6), PPC / MIPS / SPARC / SystemZ / Hexagon / EVM assemblers, patching dialog crash fixes, re-signing patched Mach-O binaries on macOS, comments on patched instructions, one cross-platform package with Keystone included
 
 Releases of the original plugin, by [gaasedelen](https://github.com/gaasedelen/patching/releases):
 
@@ -40,7 +40,7 @@ Upgrade with `hcli plugin upgrade patching-ng` and remove with `hcli plugin unin
 
 ## Manual Install
 
-Alternatively, the plugin can be manually installed by downloading `patching.zip` from the [releases](https://github.com/mahmoudimus/patching/releases) page and unzipping it to your plugins folder, or by copying the contents of this repository's `plugins/` folder there. The [Keystone](plugins/patching/keystone/README.md) libraries for Windows, Linux and macOS are included.
+Alternatively, the plugin can be manually installed by downloading `patching.zip` from the [releases](https://github.com/mahmoudimus/patching-ng/releases) page and unzipping it to your plugins folder, or by copying the contents of this repository's `plugins/` folder there. The [Keystone](plugins/patching/keystone/README.md) libraries for Windows, Linux and macOS are included.
 
 It is __*strongly*__ recommended you install this plugin into IDA's user plugin directory:
 

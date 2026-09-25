@@ -41,7 +41,7 @@
         ],
         "license": "MIT",
         "urls": {
-            "repository": "https://github.com/mahmoudimus/patching",
+            "repository": "https://github.com/mahmoudimus/patching-ng",
             "homepage": "https://github.com/gaasedelen/patching"
         },
         "authors": [
