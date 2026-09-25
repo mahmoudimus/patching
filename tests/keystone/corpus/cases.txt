@@ -1,0 +1,48 @@
+x64	140001000	mov rax, qword ptr [0x140002000]
+x64	140001000	mov qword ptr [0x140002000], rax
+x64	140001000	mov eax, dword ptr [0x140002000]
+x64	140001000	mov al, byte ptr [0x140002000]
+x64	140001000	mov rax, qword ptr [0x7fff00000000]
+x64	140001000	mov rax, qword ptr fs:[0x30]
+x64	140001000	mov rax, qword ptr gs:[0x60]
+x64	140001000	mov rcx, qword ptr [rip + 0x1000]
+x64	140001000	lea rax, [0x140002000]
+x64	140001000	call 0x140002000
+x64	140001000	jmp 0x140001002
+x64	140001000	int3
+x64	140001000	mov eax, 0Bh
+x86	401000	mov eax, dword ptr [0x402000]
+x86	401000	push 0x402000
+x86	401000	mov eax, 10
+x16	1000	mov ax, 10
+arm	1000	ldr r0, [pc, #8]
+arm	1000	strbeq r0, [r1]
+arm	1000	bl 0x2000
+arm	1000	nop
+thumb	1000	movw r0, #1
+thumb	1000	nop
+thumb	1000	nop.w
+thumb	1000	bl 0x2000
+a64	1000	adrp x0, 0x3000
+a64	1000	bl 0x2000
+a64	1000	ldr x0, [x1, #8]
+a64	1000	nop
+ppc32be	1000	stw 5, 0x18(1)
+ppc32be	1000	b 0x1100
+ppc32be	1000	nop
+ppc64le	1000	mr 3, 4
+mips32be	1000	.set noreorder; b 0x1100
+mips32be	1000	.set noreorder; addiu $sp, $sp, -8
+mips32be	1000	beq $a0, $zero, 0x1100
+mips64le	1000	nop
+sparc32	1000	ba 0x1100
+sparc32	1000	mov 1, %o0
+sparc64	1000	nop
+sysz	1000	j 0x1100
+sysz	1000	bcr 0, %r0
+sysz	1000	lgr %r1, %r2
+hexagon	1000	r0 = add(r1, r2)
+hexagon	1000	jump 0x1100
+hexagon	1000	nop
+evm	0	JUMPDEST
+evm	0	JUMP

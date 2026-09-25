@@ -1,0 +1,8 @@
+xor eax,
+mov [
+foo bar baz
+add eax, eax, eax
+.string '
+mov eax, ebx; foo
+jmp
+lock

@@ -1,0 +1,47 @@
+name: Keystone regression test 🧪
+
+# compare a keystone build published by mahmoudimus/keystone against the libraries
+# vendored in plugins/patching/keystone, byte-for-byte, on each platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      keystone_release:
+        description: 'mahmoudimus/keystone release tag to test (eg. patching-0.5.0)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          lib: libkeystone.so
+        - os: macos-latest
+          lib: libkeystone.dylib
+        - os: windows-latest
+          lib: keystone.dll
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Download ${{ matrix.lib }} from ${{ inputs.keystone_release }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        mkdir candidate
+        gh release download "${{ inputs.keystone_release }}" --repo mahmoudimus/keystone \
+          --pattern "${{ matrix.lib }}" --pattern SHA256SUMS --dir candidate
+        cd candidate && grep " ${{ matrix.lib }}$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)
+
+    - name: Compare against the vendored library
+      run: python tests/keystone/regression.py plugins/patching/keystone/${{ matrix.lib }} candidate/${{ matrix.lib }}
